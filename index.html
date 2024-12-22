@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bpm Counter</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #121212;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    .song-container {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .song-card {
+      background-color: #1e1e1e;
+      border-radius: 8px;
+      width: 150px;
+      text-align: center;
+      padding: 1rem;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.4);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .song-card input[type="text"] {
+      margin-bottom: 1rem;
+      background-color: #1e1e1e;
+      border: 1px solid #444;
+      color: #fff;
+      border-radius: 4px;
+      text-align: center;
+      width: calc(100% - 16px);
+      padding: 0.5rem;
+      box-sizing: border-box;
+    }
+
+    .song-card input[type="number"] {
+      margin-top: 1rem;
+      background-color: #1e1e1e;
+      border: 1px solid #444;
+      color: #fff;
+      border-radius: 4px;
+      text-align: center;
+      width: calc(100% - 16px);
+      padding: 0.5rem;
+      box-sizing: border-box;
+    }
+
+    .song-card button {
+      margin-top: 1rem;
+      padding: 0.5rem 1rem;
+      background-color: #00b894;
+      border: none;
+      border-radius: 4px;
+      color: #fff;
+      cursor: pointer;
+    }
+
+    .song-card button:hover {
+      background-color: #01976c;
+    }
+
+    .bpm-visualizer {
+      margin-top: 2rem;
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .bpm-block {
+      width: 40px;
+      height: 40px;
+      background-color: #1e1e1e;
+      border: 2px solid #444;
+      border-radius: 4px;
+    }
+
+    .bpm-block.active {
+      background-color: #00b894;
+    }
+
+    .controls {
+      margin-top: 2rem;
+    }
+
+    .controls select {
+      padding: 0.5rem;
+      background-color: #1e1e1e;
+      color: #fff;
+      border: 1px solid #444;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Musician's Metronome</h1>
+  <div class="song-container">
+    <div class="song-card">
+      <input type="text" value="Song 1" oninput="updateSongName(this, 0)" />
+      <input type="number" min="40" max="240" value="120" oninput="updateBpm(this, 0)" />
+      <span id="bpm-display-0">120 BPM</span>
+      <button onclick="startMetronome(0)">Start</button>
+    </div>
+    <div class="song-card">
+      <input type="text" value="Song 2" oninput="updateSongName(this, 1)" />
+      <input type="number" min="40" max="240" value="90" oninput="updateBpm(this, 1)" />
+      <span id="bpm-display-1">90 BPM</span>
+      <button onclick="startMetronome(1)">Start</button>
+    </div>
+    <div class="song-card">
+      <input type="text" value="Song 3" oninput="updateSongName(this, 2)" />
+      <input type="number" min="40" max="240" value="140" oninput="updateBpm(this, 2)" />
+      <span id="bpm-display-2">140 BPM</span>
+      <button onclick="startMetronome(2)">Start</button>
+    </div>
+    <div class="song-card">
+      <input type="text" value="Song 4" oninput="updateSongName(this, 3)" />
+      <input type="number" min="40" max="240" value="100" oninput="updateBpm(this, 3)" />
+      <span id="bpm-display-3">100 BPM</span>
+      <button onclick="startMetronome(3)">Start</button>
+    </div>
+    <div class="song-card">
+      <input type="text" value="Song 5" oninput="updateSongName(this, 4)" />
+      <input type="number" min="40" max="240" value="80" oninput="updateBpm(this, 4)" />
+      <span id="bpm-display-4">80 BPM</span>
+      <button onclick="startMetronome(4)">Start</button>
+    </div>
+    <div class="song-card">
+      <input type="text" value="Song 6" oninput="updateSongName(this, 5)" />
+      <input type="number" min="40" max="240" value="60" oninput="updateBpm(this, 5)" />
+      <span id="bpm-display-5">60 BPM</span>
+      <button onclick="startMetronome(5)">Start</button>
+    </div>
+  </div>
+
+  <div class="controls">
+    <label for="time-signature">Time Signature:</label>
+    <select id="time-signature" onchange="updateTimeSignature()">
+      <option value="4">4/4</option>
+      <option value="3">3/4</option>
+      <option value="6">6/8</option>
+    </select>
+  </div>
+
+  <div class="bpm-visualizer" id="bpm-visualizer">
+    <div class="bpm-block"></div>
+    <div class="bpm-block"></div>
+    <div class="bpm-block"></div>
+    <div class="bpm-block"></div>
+  </div>
+
+  <script>
+    let interval;
+    let timeSignature = 4;
+    const bpmValues = [120, 90, 140, 100, 80, 60];
+
+    function startMetronome(songIndex) {
+      clearInterval(interval);
+      const bpm = bpmValues[songIndex];
+      const visualizer = document.getElementById('bpm-visualizer');
+      visualizer.innerHTML = '';
+
+      for (let i = 0; i < timeSignature; i++) {
+        const block = document.createElement('div');
+        block.className = 'bpm-block';
+        visualizer.appendChild(block);
+      }
+
+      let currentBlock = 0;
+      interval = setInterval(() => {
+        const blocks = document.querySelectorAll('.bpm-block');
+        blocks.forEach(block => block.classList.remove('active'));
+        blocks[currentBlock].classList.add('active');
+        currentBlock = (currentBlock + 1) % timeSignature;
+      }, (60 / bpm) * 1000);
+    }
+
+    function updateTimeSignature() {
+      const select = document.getElementById('time-signature');
+      timeSignature = parseInt(select.value);
+      clearInterval(interval);
+    }
+
+    function updateBpm(input, index) {
+      bpmValues[index] = parseInt(input.value);
+      const bpmDisplay = document.getElementById(`bpm-display-${index}`);
+      bpmDisplay.textContent = `${input.value} BPM`;
+    }
+
+    function updateSongName(input, index) {
+      console.log(`Song ${index + 1} renamed to: ${input.value}`);
+    }
+  </script>
+</body>
+</html>
